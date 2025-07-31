@@ -49,22 +49,32 @@ int handle_fib(int argc, char *argv[]){
         return 1;
     }
 
-    int n = atoi(argv[1]);
+    char *endptr;
+    errno = 0;
+    long n = strtol(argv[1], &endptr, 10);
 
-    if (n < 0) {
-        printf("<n> must be a non-negative integer.\n");
+    // Check for errors: invalid characters or out-of-range
+    if (*endptr != '\0' || errno != 0 || n < 0) {
+        printf("Invalid input. Usage: fib <n>\n");
         return 1;
     }
-    // Calculate Fibonacci number
+    
+    // Compute Fibonacci number (iteratively)
+    long a = 0, b = 1;
+    for (int i = 0; i < n; i++) {
+        long temp = a + b;
+        a = b;
+        b = temp;
+    }
 
-    //printf("%d\n", result);
+    printf("%ld\n", a);
     return 0;
 }
 
 
 int handle_caesar(int argc, char *argv[]) {
     if (argc < 3) {
-        printf("Usage: caesar <shift> <text>\n");
+        printf("Invalid input. Usage: caesar <shift> <text>\n");
         return 1;
     }
 
