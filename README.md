@@ -3,10 +3,59 @@ A minimal custom shell written in C as part of the Sword Health technical challe
 Handles built-in commands (`fib`, `caesar`, `exit`) and external Linux commands.
 
 ## Features
-- `exit`: Quits the shell
-- `fib <n>`: Computes the nth Fibonacci number (0-indexed)
-- `caesar <shift> <text>`: Encodes <text> using Caesar cipher with positive/negative <shift>
-- anything else: Run as an external command (`ls`, `pwd`, etc.) using `fork()`, `execvp()`, and `wait()`
+- Command Prompt: Interactive `sword-shell>` prompt for user input.
+- External Commands: Executes standard command (`ls`, `pwd`, etc.) using `fork()`, `execvp()`, and `wait()`.
+- Built-in Commands:
+    - `fib <n>`: Calculates the nth Fibonacci number (0-indexed).
+    - `caesar <shift> <text>`: Applies Caesar cipher to text with support for shifts and punctuation.
+    - `exit`: Cleanly exits the shell.
+- Input Parsing: Tokenization of user input with support for quoted strings and multiple arguments.
+- Error Handling: Graceful recovery from malformed inputs and unrecognized commands.
+- Logging: Debug mode enabled via `make DEBUG=1`, using custom `log.h` macros.
+- Unit Tests: Key logic tested using assertions.
+
+
+
+## Build Instructions
+Prerequisites:
+- GCC compiler
+- GNU Make
+- Linux environment or WSL
+
+Compile:
+- `make`           # builds the shell
+- `make run`       # builds and runs the shell
+- `make DEBUG=1`   # builds with debug logging enabled
+- `make test`      # runs unit tests for core logic
+
+## Cleanup
+Removes 
+```bash
+make clean
+```
+
+## Debugging
+Enable debug messages by compiling with DEBUG=1:
+```bash
+make DEBUG=1 run
+```
+Debug logs will show internal flow (e.g., command dispatch, parsing info, logic execution).
+To suppress logs, use the default build: `make run`.
+
+## Testing
+
+Run:
+```bash
+make test
+```
+
+Unit tests verify:
+- Correct Fibonacci outputs (e.g., `fib 0`, `fib 10`)
+- Proper handling of invalid inputs (e.g., `fib abc`, `caesar x Hello`)
+- Caesar encryption with both positive and negative shifts
+- Basic edge cases for both logic and input validation
+
+Tests are located in `test.c` and run using assertions (`assert()`).
 
 ## Usage Examples
 
@@ -31,7 +80,15 @@ sword-shell> exit
 ```
 
 ## File Structure
+.
+├── shell.c              # Main shell entry and loop
+├── shell_utils.c        # Implementation of logic helpers (fib, caesar)
+├── shell_utils.h        # Function declarations
+├── log.h                # Debug log macros
+├── test.c               # Unit tests for core logic
+├── makefile             # Build automation
+└── README.md            # Project documentation
 
-  
+
 ## Author
 Margarida Pinho - July 2025

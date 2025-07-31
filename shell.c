@@ -55,7 +55,10 @@ int read_and_parse_input(char *argv[]) {
         token = strtok(NULL, " ");
     }
     argv[argc] = NULL;  // Null-terminate array
-    DEBUG_PRINT("Parsed command: %s", argv[0]);
+    printf("[DEBUG] Parsed arguments (%d):\n", argc);
+    for (int i = 0; i < argc; i++) {
+        printf("  argv[%d]: %s\n", i, argv[i]);
+    }
     
     return argc;
 }
@@ -71,7 +74,7 @@ int read_and_parse_input(char *argv[]) {
  */
 void execute_external_command(char *argv[]) {
     pid_t pid = fork();
-    DEBUG_PRINT("Forked child process with PID %d", pid);
+    DEBUG_PRINT("Forked process with PID %d", pid);
 
     if (pid < 0) {
         perror("Fork failed");
@@ -79,6 +82,11 @@ void execute_external_command(char *argv[]) {
     }
     else if(pid == 0) {
         // Child process: execute the command
+        DEBUG_PRINT("Executing external command: %s", argv[0]);
+        DEBUG_PRINT("Arguments:");
+        for (int i = 0; argv[i] != NULL; i++) {
+            DEBUG_PRINT("  argv[%d]: %s", i, argv[i]);
+        }
         execvp(argv[0], argv);
         //when it ends sends signal SIGCHILD to the parent
         perror("execvp failed");
@@ -141,7 +149,9 @@ int main() {
     while (1) {
         argc = read_and_parse_input(argv);
         if (argc == 0) continue;  // skip empty input
-        else if (strcmp(argv[0], "exit") == 0) {
+
+        if (strcmp(argv[0], "exit") == 0) {
+            DEBUG_PRINT("Exiting shell");
             break;  // Exit the shell
         } else if (strcmp(argv[0], "fib") == 0) {
             handle_fib(argc, argv);

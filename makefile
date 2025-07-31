@@ -9,10 +9,14 @@ endif
 
 # Target executable
 TARGET = sword-shell
-
-# Source and object files
 SRC = shell.c shell_utils.c
 OBJ = $(SRC:.c=.o)
+
+TEST_TARGET = run_tests
+TEST_SRC = test.c shell_utils.c
+TEST_OBJ = $(TEST_SRC:.c=.o)
+
+.PHONY: all clean run test rebuild
 
 # Default target
 all: $(TARGET)
@@ -21,17 +25,21 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-# Build each object file
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean compiled files
-clean:
-	rm -f $(TARGET) $(OBJ)
-
-# Build and run
-run: all
+# Run main program
+run: $(TARGET)
 	./$(TARGET)
+
+# Build and run unit tests
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+$(TEST_TARGET): $(TEST_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^
+
+# Clean all
+clean:
+	rm -f $(TARGET) $(OBJ) $(TEST_TARGET) $(TEST_OBJ)
 
 # Full rebuild
 rebuild: clean all
