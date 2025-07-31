@@ -1,0 +1,5 @@
+# Compiled binary
+sword-shell
+
+# Object files
+*.o
