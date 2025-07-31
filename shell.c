@@ -4,10 +4,15 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include "shell_utils.c"
+#include <sys/wait.h>
+#include "shell_utils.h"
+#include <unistd.h>
+#include <signal.h>
+#include <time.h>
 
 #define MAX_LINE 1024
 #define MAX_ARGS 100
+#define MAX_WAIT 5  // seconds
 
 
 int read_and_parse_input(char *argv[]) {
@@ -39,66 +44,61 @@ int read_and_parse_input(char *argv[]) {
     }
     argv[argc] = NULL;  // Null-terminate array
     
-
-   
     return argc;
 }
 
-int handle_fib(int argc, char *argv[]){
-    if (argc != 2) {
-        printf("Usage: fib <n>\n");
-        return 1;
+
+void execute_external_command(char *argv[]) {
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return;
     }
+    else if(pid == 0) {
+        // Child process: execute the command
+        execvp(argv[0], argv);
+        //when it ends sends signal SIGCHILD to the parent
+        perror("execvp failed");
+        exit(EXIT_FAILURE);
+    
+    }
+    else if( pid > 0) {
+        // Parent process: wait for the child to finish
+        int status;
+        time_t start = time(NULL);
 
-    char *endptr;
-    errno = 0;
-    long n = strtol(argv[1], &endptr, 10);
+        while (1) {
+            pid_t result = waitpid(pid, &status, WNOHANG);
 
-    // Check for errors: invalid characters or out-of-range
-    if (*endptr != '\0' || errno != 0 || n < 0) {
-        printf("Invalid input. Usage: fib <n>\n");
-        return 1;
+            if (result == -1) {
+                perror("waitpid failed");
+                return;
+            }
+
+            if (result > 0) {
+                // Child has finished
+                if (WIFEXITED(status)) {
+                    printf("Child exited with status %d\n", WEXITSTATUS(status));
+                } else if (WIFSIGNALED(status)) {
+                    printf("Child terminated by signal %d\n", WTERMSIG(status));
+                }
+                break;
+            }
+
+            // Child still running, check for timeout
+            if (time(NULL) - start >= MAX_WAIT) {
+                printf("Command exceeded time limit (%d seconds), killing it.\n", MAX_WAIT);
+                kill(pid, SIGKILL);
+                waitpid(pid, &status, 0);  // Reap the child
+                break;
+            }
+
+            usleep(100000);  // sleep 100ms
+        }
+    
     }
     
-    long result = compute_fibonacci(n);
-
-    if (result < 0) {
-        printf("Error: Fibonacci number too large.\n");
-        return 1;
-    }
-    // Print the result
-    printf("%ld\n", result);
-    return 0;
-}
-
-
-int handle_caesar(int argc, char *argv[]) {
-    if (argc < 3) {
-        printf("Invalid input. Usage: caesar <shift> <text>\n");
-        return 1;
-    }
-
-    char *endptr;
-    errno = 0;
-
-    long shift = strtol(argv[1], &endptr, 10);
-
-    if (errno != 0 || *endptr != '\0' || shift > INT_MAX) {
-        printf("Invalid input. Usage: caesar <shift> <text>\n");
-        return 1;
-    }
-
-    int shift_val = (int)shift;
-        char *encrypted = caesar_encrypt_all_args(argc, argv, shift_val);
-    if (!encrypted) {
-        printf("Error: Memory allocation failed.\n");
-        return 1;
-    }
-
-    printf("%s\n", encrypted);
-    free(encrypted);
-
-    return 0;
 }
 
 int main() {
@@ -108,15 +108,14 @@ int main() {
     while (1) {
         argc = read_and_parse_input(argv);
         if (argc == 0) continue;  // skip empty input
-
-        if (strcmp(argv[0], "exit") == 0) {
-            break;
+        else if (strcmp(argv[0], "exit") == 0) {
+            break;  // Exit the shell
         } else if (strcmp(argv[0], "fib") == 0) {
-           handle_fib(argc, argv);
+            handle_fib(argc, argv);
         } else if (strcmp(argv[0], "caesar") == 0) {
-           handle_caesar(argc, argv);
+            handle_caesar(argc, argv);
         } else {
-            //execute_external_command(argv);
+            execute_external_command(argv);
         }
     }
 

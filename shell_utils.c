@@ -1,4 +1,10 @@
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <limits.h>
+
 char shift_char(char c, int shift) {
     if (c >= 'a' && c <= 'z') {
         return ((c - 'a' + shift + 26) % 26) + 'a';
@@ -47,4 +53,61 @@ long compute_fibonacci(long n) {
         b = temp;
     }
     return b;
+}
+
+int handle_fib(int argc, char *argv[]){
+    if (argc != 2) {
+        printf("Usage: fib <n>\n");
+        return 1;
+    }
+
+    char *endptr;
+    errno = 0;
+    long n = strtol(argv[1], &endptr, 10);
+
+    // Check for errors: invalid characters or out-of-range
+    if (*endptr != '\0' || errno != 0 || n < 0) {
+        printf("Invalid input. Usage: fib <n>\n");
+        return 1;
+    }
+    
+    long result = compute_fibonacci(n);
+
+    if (result < 0) {
+        printf("Error: Fibonacci number too large.\n");
+        return 1;
+    }
+    // Print the result
+    printf("%ld\n", result);
+    return 0;
+}
+
+
+int handle_caesar(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Invalid input. Usage: caesar <shift> <text>\n");
+        return 1;
+    }
+
+    char *endptr;
+    errno = 0;
+
+    long shift = strtol(argv[1], &endptr, 10);
+
+    if (errno != 0 || *endptr != '\0' || shift > INT_MAX) {
+        printf("Invalid input. Usage: caesar <shift> <text>\n");
+        return 1;
+    }
+
+    int shift_val = (int)shift;
+        char *encrypted = caesar_encrypt_all_args(argc, argv, shift_val);
+    if (!encrypted) {
+        printf("Error: Memory allocation failed.\n");
+        return 1;
+    }
+
+    printf("%s\n", encrypted);
+    free(encrypted);
+
+    return 0;
 }

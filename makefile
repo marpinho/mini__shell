@@ -5,7 +5,7 @@ CFLAGS = -Wall -Wextra -g
 TARGET = sword-shell
 
 # Source file
-SRC = shell.c
+SRC = shell.c shell_utils.c
 
 # Default target
 all: $(TARGET)
