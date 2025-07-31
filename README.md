@@ -80,14 +80,15 @@ sword-shell> exit
 ```
 
 ## File Structure
-.
-├── shell.c              # Main shell entry and loop
-├── shell_utils.c        # Implementation of logic helpers (fib, caesar)
-├── shell_utils.h        # Function declarations
-├── log.h                # Debug log macros
-├── test.c               # Unit tests for core logic
-├── makefile             # Build automation
-└── README.md            # Project documentation
+. <br />
+ ├── shell.c              # Main shell entry and loop <br />
+ ├── shell_utils.c        # Implementation of logic helpers (fib, caesar) <br />
+ ├── shell_utils.h        # Function declarations <br />
+ ├── log.h                # Debug log macros <br />
+ ├── test.c               # Unit tests for core logic <br />
+ ├── makefile             # Build automation <br />
+ └── README.md            # Project documentation <br />
+
 
 
 ## Author
