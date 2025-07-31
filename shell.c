@@ -9,12 +9,22 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include "log.h"
+
 
 #define MAX_LINE 1024
 #define MAX_ARGS 100
 #define MAX_WAIT 5  // seconds
 
-
+/**
+ * @brief        Reads user input and tokenizes it into arguments.
+ *
+ * @details      Displays the shell prompt, reads a line from stdin,
+ *               and splits it into tokens stored in argv[].
+ *
+ * @param argv   Output array to store parsed command and arguments
+ * @return       Number of arguments parsed (argc); 0 if empty or invalid
+ */
 int read_and_parse_input(char *argv[]) {
     static char input[MAX_LINE];  // static so argv points to it safely
     printf("sword-shell> ");
@@ -28,6 +38,8 @@ int read_and_parse_input(char *argv[]) {
 
     // Remove newline
     input[strcspn(input, "\n")] = 0;
+    DEBUG_PRINT("User entered: %s", input);
+
 
     // Check for empty input
     if (strlen(input) == 0 || strspn(input, " \t") == strlen(input)) {
@@ -43,13 +55,23 @@ int read_and_parse_input(char *argv[]) {
         token = strtok(NULL, " ");
     }
     argv[argc] = NULL;  // Null-terminate array
+    DEBUG_PRINT("Parsed command: %s", argv[0]);
     
     return argc;
 }
 
-
+/**
+ * @brief        Executes an external command using fork and execvp.
+ *
+ * @details      Forks a new process to run the external command passed in argv.
+ *               Waits for the child process with a timeout. If the command takes
+ *               too long, it is terminated to avoid blocking the shell.
+ *
+ * @param argv   Null-terminated array of command arguments
+ */
 void execute_external_command(char *argv[]) {
     pid_t pid = fork();
+    DEBUG_PRINT("Forked child process with PID %d", pid);
 
     if (pid < 0) {
         perror("Fork failed");
@@ -79,9 +101,9 @@ void execute_external_command(char *argv[]) {
             if (result > 0) {
                 // Child has finished
                 if (WIFEXITED(status)) {
-                    printf("Child exited with status %d\n", WEXITSTATUS(status));
+                    DEBUG_PRINT("Child exited with status %d\n", WEXITSTATUS(status));
                 } else if (WIFSIGNALED(status)) {
-                    printf("Child terminated by signal %d\n", WTERMSIG(status));
+                    DEBUG_PRINT("Child terminated by signal %d\n", WTERMSIG(status));
                 }
                 break;
             }
@@ -101,9 +123,20 @@ void execute_external_command(char *argv[]) {
     
 }
 
+/**
+ * @brief        Entry point of the mini shell application.
+ *
+ * @details      Continuously displays a shell prompt, reads user input,
+ *               parses commands, and dispatches them to built-in or external
+ *               handlers. Exits when the "exit" command is issued or EOF is received.
+ *
+ * @return       Exit code of the shell program (0 for normal exit)
+ */
 int main() {
     char *argv[MAX_ARGS];
     int argc;
+
+    DEBUG_PRINT("Starting shell loop");
 
     while (1) {
         argc = read_and_parse_input(argv);
