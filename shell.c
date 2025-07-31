@@ -55,11 +55,12 @@ int read_and_parse_input(char *argv[]) {
         token = strtok(NULL, " ");
     }
     argv[argc] = NULL;  // Null-terminate array
-    printf("[DEBUG] Parsed arguments (%d):\n", argc);
+    DEBUG_PRINT("Parsed %d arguments", argc);
+    DEBUG_PRINT("Arguments:");
     for (int i = 0; i < argc; i++) {
-        printf("  argv[%d]: %s\n", i, argv[i]);
-    }
-    
+        DEBUG_PRINT("  argv[%d]: %s", i, argv[i]);
+    }   
+  
     return argc;
 }
 
