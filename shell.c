@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include "shell_utils.c"
 
 #define MAX_LINE 1024
 #define MAX_ARGS 100
@@ -59,15 +60,14 @@ int handle_fib(int argc, char *argv[]){
         return 1;
     }
     
-    // Compute Fibonacci number (iteratively)
-    long a = 0, b = 1;
-    for (int i = 0; i < n; i++) {
-        long temp = a + b;
-        a = b;
-        b = temp;
-    }
+    long result = compute_fibonacci(n);
 
-    printf("%ld\n", a);
+    if (result < 0) {
+        printf("Error: Fibonacci number too large.\n");
+        return 1;
+    }
+    // Print the result
+    printf("%ld\n", result);
     return 0;
 }
 
@@ -83,14 +83,21 @@ int handle_caesar(int argc, char *argv[]) {
 
     long shift = strtol(argv[1], &endptr, 10);
 
-    if (errno != 0 || *endptr != '\0' || shift < 0 || shift > INT_MAX) {
+    if (errno != 0 || *endptr != '\0' || shift > INT_MAX) {
         printf("Invalid input. Usage: caesar <shift> <text>\n");
         return 1;
     }
 
     int shift_val = (int)shift;
+        char *encrypted = caesar_encrypt_all_args(argc, argv, shift_val);
+    if (!encrypted) {
+        printf("Error: Memory allocation failed.\n");
+        return 1;
+    }
 
-    // Perform Caesar cipher encryption
+    printf("%s\n", encrypted);
+    free(encrypted);
+
     return 0;
 }
 
