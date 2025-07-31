@@ -16,25 +16,24 @@ Handles built-in commands (`fib`, `caesar`, `exit`) and external Linux commands.
 
 
 
-## Build Instructions
-# Prerequisites:
+## Prerequisites:
 - GCC compiler
 - GNU Make
 - Linux environment or WSL
 
-# Compile:
+## Compile:
 - `make`           # builds the shell
 - `make run`       # builds and runs the shell
 - `make DEBUG=1`   # builds with debug logging enabled
 - `make test`      # runs unit tests for core logic
 
-# Cleanup
+## Cleanup
 Removes 
 ```bash
 make clean
 ```
 
-# Debugging
+## Debugging
 Enable debug messages by compiling with DEBUG=1:
 ```bash
 make DEBUG=1 run
@@ -42,7 +41,7 @@ make DEBUG=1 run
 Debug logs will show internal flow (e.g., command dispatch, parsing info, logic execution).
 To suppress logs, use the default build: `make run`.
 
-# Testing
+## Testing
 
 Run:
 ```bash
