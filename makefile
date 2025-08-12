@@ -16,30 +16,29 @@ TEST_TARGET = run_tests
 TEST_SRC = test.c shell_utils.c
 TEST_OBJ = $(TEST_SRC:.c=.o)
 
-.PHONY: all clean run test rebuild
+# Phony targets are commands, not files 
+# allways run regardless of whether a file with that name exists
+.PHONY: all clean run test
 
-# Default target
+# Default target: build the main program
 all: $(TARGET)
 
 # Build executable
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-
-# Run main program
-run: $(TARGET)
-	./$(TARGET)
-
-# Build and run unit tests
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
-
 $(TEST_TARGET): $(TEST_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-# Clean all
+# Run main program (builds first if needed)
+run: $(TARGET)
+	./$(TARGET)
+
+# Run unit tests (builds first if needed)
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+# Clean up all generated files
 clean:
 	rm -f $(TARGET) $(OBJ) $(TEST_TARGET) $(TEST_OBJ)
 
-# Full rebuild
-rebuild: clean all

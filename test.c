@@ -1,8 +1,9 @@
 #include <assert.h>
 #include <string.h>
-#include "shell_utils.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "shell_utils.h"
 
 /**
  * @brief        Tests the successful computation of Fibonacci numbers.
@@ -88,6 +89,7 @@ void test_handle_caesar_invalid() {
 
     printf("test_handle_caesar_invalid passed\n");
 }
+
 /**
  * @brief        Main function to run all tests.
  * @details      Calls each test function and checks assertions.

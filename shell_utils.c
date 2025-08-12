@@ -1,3 +1,14 @@
+/**
+ * @file shell_utils.c
+ * @author Margarida Pinho
+ * @brief Implementation of built-in shell commands and parsing logic.
+ * @date August 2025
+ *
+ * @details This file contains the core logic for commands that are handled
+ * directly by the shell, such as 'fib' and 'caesar'. It also includes
+ * the functions responsible for parsing user input and executing external
+ * commands.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,15 +19,16 @@
 
 
 /**
- * @brief        Computes the nth Fibonacci number using an iterative method.
+ * @brief Computes the nth Fibonacci number using an iterative method.
  *
- * @param n      Index of the Fibonacci number (must be >= 0)
- * @return       The nth Fibonacci number
+ * @param n The index in the Fibonacci sequence (must be non-negative).
+ * @return long The nth Fibonacci number, or a negative value on overflow.
  */
 long compute_fibonacci(long n) {
     if (n == 0) return 0;
     if (n == 1) return 1;
-
+    
+    // Use an iterative approach to avoid stack overflow from deep recursion.
     long a = 0, b = 1, temp;
     for (long i = 2; i <= n; i++) {
         temp = a + b;
@@ -27,27 +39,98 @@ long compute_fibonacci(long n) {
 }
 
 /**
- * @brief        Handles the built-in 'fib' command.
+ * @brief Shifts a single character by a given value for the Caesar cipher.
  *
- * @details      Computes and prints the nth Fibonacci number (0-indexed).
- *               Validates the input to ensure it's a non-negative integer.
+ * @details The core of the Caesar cipher is this modular arithmetic. It ensures
+ * that letters "wrap around" the alphabet (e.g., 'z' + 1 becomes 'a') and
+ * handles both positive and negative shifts correctly. Non-alphabetic
+ * characters are returned unchanged.
  *
- * @param argc   Argument count (should be exactly 2)
- * @param argv   Argument vector: argv[1] must be a non-negative integer
- * @return       0 on success, 1 on invalid input
+ * @param c The character to be shifted.
+ * @param shift The integer value to shift by.
+ * @return char The shifted character.
  */
-int handle_fib(int argc, char *argv[]){
-    DEBUG_PRINT("Handling 'fib' command for n=%s", argv[1]);
-    if (argc != 2) {
+char shift_char(char c, int shift) {
+    if (c >= 'a' && c <= 'z') {
+        return ((c - 'a' + shift + 26) % 26) + 'a';
+    } else if (c >= 'A' && c <= 'Z') {
+        return ((c - 'A' + shift + 26) % 26) + 'A';
+    } else {
+        return c;  
+    }
+}
+
+/**
+ * @brief Encrypts and concatenates multiple string arguments into a single message.
+ *
+ * @details Iterates through the provided arguments, encrypts each character
+ * using shift_char(), and joins them with spaces into a single string.
+ * This function calculates the required memory upfront to avoid multiple
+ * costly reallocations.
+ *
+ * @param argcount The total number of arguments.
+ * @param arguments The array of string arguments. Text to be encrypted starts at index 2.
+ * @param shift The integer shift value for the Caesar cipher.
+ *
+ * @return char* A newly allocated string containing the full encrypted message.
+ * @return NULL If memory allocation fails.
+ *
+ * @note The caller is responsible for freeing the returned string to prevent memory leaks.
+ */
+char *caesar_encrypt_all_args(int argcount, char *arguments[], int shift) {
+    int total_len = 0;
+    for (int i = 2; i < argcount; i++) {
+        total_len += strlen(arguments[i]);
+    }
+    // Add space for spaces between words and the final null terminator.
+    total_len += (argcount - 3) + 1;
+
+    char *result = malloc(total_len);
+    if (!result) return NULL; // Check for malloc failure
+
+    int pos = 0;
+    for (int i = 2; i < argcount; i++) {
+        for (int j = 0; arguments[i][j] != '\0'; j++) {
+            result[pos++] = shift_char(arguments[i][j], shift);
+        }
+        // Add a space after each word except the last one.
+        if (i < argcount - 1) {
+            result[pos++] = ' ';
+        }
+    }
+
+    result[pos] = '\0'; // Null-terminate
+    return result;
+}
+
+/**
+ * @brief Handles the 'fib' built-in command.
+ *
+ * @details Parses the user's input, validates it, and if valid, computes
+ *          and prints the nth Fibonacci number. Provides user-friendly error
+ *          messages for incorrect usage.
+ *
+ * @param argcount The number of arguments in the 'arguments' array. Expected to be 2.
+ * @param arguments A null-terminated array of strings.
+ *                  - arguments[0] is expected to be "fib".
+ *                  - arguments[1] is the string to be converted to a number 'n'.
+ *
+ * @return int Returns 0 on successful execution.
+ * @return int Returns 1 if the input is invalid.
+ */
+int handle_fib(int argcount, char *arguments[]){
+    if (argcount != 2) {
         printf("Usage: fib <n>\n");
         return 1;
     }
 
     char *endptr;
     errno = 0;
-    long n = strtol(argv[1], &endptr, 10);
+    // Use strtol instead of atoi for robust error checking.
+    long n = strtol(arguments[1], &endptr, 10);
 
-    // Check for errors: invalid characters or out-of-range
+    // - *endptr != '\0' means there were non-numeric characters left.
+    // - errno != 0 means the number was out of range (e.g., too large).
     if (*endptr != '\0' || errno != 0 || n < 0) {
         printf("Invalid input. Usage: fib <n>\n");
         return 1;
@@ -65,82 +148,23 @@ int handle_fib(int argc, char *argv[]){
 }
 
 /**
- * @brief        Shifts a character by a given Caesar cipher shift.
+ * @brief Handles the 'caesar' built-in command.
  *
- * @details      Only letters (a–z, A–Z) are shifted; case is preserved.
- *               Non-alphabetic characters are returned unchanged.
+ * @details Parses the user's input for a shift value and text, then encrypts
+ *          and prints the result. Provides user-friendly error messages.
  *
- * @param c      Character to shift
- * @param shift  Shift value for Caesar cipher
- * @return       Shifted character
+ * @param argcount The number of arguments. Expected to be at least 3.
+ * @param arguments A null-terminated array of strings.
+ *                  - arguments[0] is expected to be "caesar".
+ *                  - arguments[1] is the shift value.
+ *                  - arguments[2...] is the text to be encrypted.
+ *
+ * @return int Returns 0 on successful execution.
+ * @return int Returns 1 if the input is invalid.
  */
-char shift_char(char c, int shift) {
-    if (c >= 'a' && c <= 'z') {
-        return ((c - 'a' + shift + 26) % 26) + 'a';
-    } else if (c >= 'A' && c <= 'Z') {
-        return ((c - 'A' + shift + 26) % 26) + 'A';
-    } else {
-        return c;  // Non-alphabetical characters remain unchanged
-    }
-}
+int handle_caesar(int argcount, char *arguments[]) {
 
-/**
- * @brief        Encrypts all argument strings using Caesar cipher and concatenates the result.
- *
- * @details      Applies the Caesar cipher to each argument starting from argv[2], shifting only
- *               alphabetic characters (a–z, A–Z) while preserving case. Non-alphabetic characters
- *               (spaces, punctuation) are kept unchanged. Returns a dynamically allocated string
- *               containing the full encrypted message with spaces between original words.
- *
- * @param argc   Argument count (should be >= 3 for valid input)
- * @param argv   Argument values; argv[2] and onward are encrypted and joined
- * @param shift  Caesar cipher shift value (can be negative)
- * @return       A newly allocated string containing the encrypted message.
- *               Returns NULL on allocation failure.
- *
- * @note         Caller is responsible for freeing the returned string.
- */
-char *caesar_encrypt_all_args(int argc, char *argv[], int shift) {
-    // Encrypt argv[2] ... argv[argc-1] and return the result as a malloc’d string
-    // First, calculate total length
-    int total_len = 0;
-    for (int i = 2; i < argc; i++) {
-        total_len += strlen(argv[i]);
-        if (i < argc - 1) total_len++; // for space
-    }
-
-    // Allocate space for result (+1 for '\0')
-    char *result = malloc(total_len + 1);
-    if (!result) return NULL; // Check for malloc failure
-
-    int pos = 0;
-    for (int i = 2; i < argc; i++) {
-        for (int j = 0; argv[i][j] != '\0'; j++) {
-            result[pos++] = shift_char(argv[i][j], shift);
-        }
-        if (i < argc - 1) {
-            result[pos++] = ' ';
-        }
-    }
-
-    result[pos] = '\0'; // Null-terminate
-    return result;
-}
-
-/**
- * @brief        Handles the built-in 'caesar' command.
- *
- * @details      Applies a Caesar cipher to the input text using the given shift.
- *               Validates input and prints the encrypted result.
- *
- * @param argc   Argument count; must be at least 3
- * @param argv   Argument vector; argv[1] is the shift, argv[2...] is the text
- * @return       0 on success, 1 on invalid input
- */
-int handle_caesar(int argc, char *argv[]) {
-    DEBUG_PRINT("Handling 'caesar' command with shift %s", argv[1]);
-
-    if (argc < 3) {
+    if (argcount < 3) {
         printf("Invalid input. Usage: caesar <shift> <text>\n");
         DEBUG_PRINT("Insufficient arguments for 'caesar' command");
         return 1;
@@ -149,25 +173,28 @@ int handle_caesar(int argc, char *argv[]) {
     char *endptr;
     errno = 0;
 
-    long shift = strtol(argv[1], &endptr, 10);
+    long shift = strtol(arguments[1], &endptr, 10);
 
-    if (errno != 0 || *endptr != '\0' || shift > INT_MAX) {
+    // Check for a range error (overflow/underflow) with errno
+    // Check for a format error with endptr (non-numeric characters)
+    if (errno != 0 || *endptr != '\0') {
         printf("Invalid input. Usage: caesar <shift> <text>\n");
-        DEBUG_PRINT("Invalid shift value: %s", argv[1]);
+        DEBUG_PRINT("Invalid shift value: %s", arguments[1]);
         return 1;
     }
 
     int shift_val = (int)shift;
     DEBUG_PRINT("Handling Caesar with shift %d", shift_val);
 
-    char *encrypted = caesar_encrypt_all_args(argc, argv, shift_val);
+    char *encrypted = caesar_encrypt_all_args(argcount, arguments, shift_val);
     if (!encrypted) {
         DEBUG_PRINT("Memory allocation failed for Caesar encryption");
         return 1;
     }
 
     printf("%s\n", encrypted);
-    free(encrypted);
+    free(encrypted);    
+    encrypted = NULL;
 
     return 0;
 }
